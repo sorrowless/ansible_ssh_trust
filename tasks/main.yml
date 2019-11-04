@@ -1,0 +1,16 @@
+---
+- name: Override default data with user one
+  set_fact:
+    ssh_trust: "{{ ssh_trust_defaults | combine(ssh_trust, recursive=True) }}"
+  tags:
+    - always
+
+- include_tasks: master.yml
+  when: ssh_trust.master
+  tags:
+    - master
+
+- include_tasks: slave.yml
+  when: not ssh_trust.master
+  tags:
+    - slave

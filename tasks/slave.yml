@@ -1,0 +1,44 @@
+---
+- name: Ensure backup user for slave host
+  user:
+    name: "{{ ssh_trust.backup_user.name }}"
+    comment: "{{ ssh_trust.backup_user.comment | default('') }}"
+    createhome: yes
+    state: "{{ ssh_trust.backup_user.state | default('present') }}"
+    shell: "{{ ssh_trust.backup_user.shell | default('/bin/false') }}"
+  when: ssh_trust.backup_user.create
+
+- name: Find proper master host
+  set_fact:
+    master_host: "{% for host in groups['ssh_trust_masters'] %}{% if hostvars[host].ssh_trust.group == ssh_trust.group %}{% if hostvars[host].ssh_master_public_key %}{{ host }}{% endif %}{% endif %}{% endfor %}"
+
+- name: Fail in case there is no masters for given group
+  fail:
+    msg: "We found SSH trust group name '{{ ssh_trust.group }}' for slave host '{{ inventory_hostname }}'. But seems that there is no masters with such a group, so we gracefully stop the playbook. Check your vars and re-run, please."
+  when: master_host == ''
+
+- name: Ensure master public key for backup user
+  authorized_key:
+    user: "{{ ssh_trust.backup_user.name }}"
+    state: present
+    key: "{{ hostvars[master_host].ssh_master_public_key.content | b64decode }}"
+
+- name: Try to ensure public key fingerprint to on master
+  block:
+    - name: Get fingerprints from slave
+      shell:
+        cmd: |
+          ssh-keyscan -p {{ ansible_port }} {{ ansible_host }}
+      delegate_to: "{{ master_host }}"
+      register: fingerprint
+      changed_when: false
+
+    - name: Ensure fingerprint in master known files
+      become_user: "{{ hostvars[master_host].ssh_trust.backup_user.name }}"
+      become: yes
+      blockinfile:
+        path: "~/.ssh/known_hosts"
+        block: |
+          # Managed by Ansible. Host {{ ansible_host }}
+          {{ fingerprint.stdout }}
+      delegate_to: "{{ master_host }}"

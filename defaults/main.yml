@@ -1,0 +1,18 @@
+---
+# defaults file for ssh-trust
+ssh_trust: {}
+ssh_trust_defaults:
+  master: false
+  group: default
+  key:
+    type: ed25519
+    comment: "backup@{{ ansible_host }}"
+    ed25519:
+      rounds: 100
+    rsa:
+      bits: 2048
+  backup_user:
+    create: false
+    name: backuper
+    comment: "User to make backups from other nodes"
+    shell: /bin/bash
