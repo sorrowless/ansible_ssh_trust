@@ -1,27 +1,38 @@
 ---
-- name: Ensure backup user for slave host
+- name: Ensure trust user for slave host
   user:
-    name: "{{ ssh_trust.backup_user.name }}"
-    comment: "{{ ssh_trust.backup_user.comment | default('') }}"
+    name: "{{ ssh_trust.trust_user.name }}"
+    comment: "{{ ssh_trust.trust_user.comment | default('') }}"
     createhome: yes
-    state: "{{ ssh_trust.backup_user.state | default('present') }}"
-    shell: "{{ ssh_trust.backup_user.shell | default('/bin/false') }}"
-  when: ssh_trust.backup_user.create
+    state: "{{ ssh_trust.trust_user.state | default('present') }}"
+    shell: "{{ ssh_trust.trust_user.shell | default('/bin/false') }}"
+  when: ssh_trust.trust_user.create
 
 - name: Find proper master host
   set_fact:
-    master_host: "{% for host in groups['ssh_trust_masters'] %}{% if hostvars[host].ssh_trust.group == ssh_trust.group %}{% if hostvars[host].ssh_master_public_key %}{{ host }}{% endif %}{% endif %}{% endfor %}"
+    # Basically at this stage all master hosts will already have ssh keys due
+    # to the fact master tasks declared earlier than slave tasks and thus they
+    # will be done earlier as slaves will wait for masters to be done
+    master_hosts: "{% if hostvars[host].ssh_trust.master and hostvars[host].ssh_trust.group == ssh_trust.group %}{{ master_hosts | default([]) | union([host]) }}{% else %}{{ master_hosts | default([]) }}{% endif %}"
+  # Magic `ansible_play_hosts_all` var allows us to name ssh_trust group
+  # whatever we want to and don't use separate master and slave groups
+  loop: "{{ ansible_play_hosts_all }}"
+  loop_control:
+    loop_var: host
 
 - name: Fail in case there is no masters for given group
   fail:
     msg: "We found SSH trust group name '{{ ssh_trust.group }}' for slave host '{{ inventory_hostname }}'. But seems that there is no masters with such a group, so we gracefully stop the playbook. Check your vars and re-run, please."
-  when: master_host == ''
+  when: master_hosts == []
 
-- name: Ensure master public key for backup user
+- name: Ensure master public key for trust user
   authorized_key:
-    user: "{{ ssh_trust.backup_user.name }}"
+    user: "{{ ssh_trust.trust_user.name }}"
     state: present
     key: "{{ hostvars[master_host].ssh_master_public_key.content | b64decode }}"
+  loop: "{{ master_hosts }}"
+  loop_control:
+    loop_var: master_host
 
 - name: Try to ensure public key fingerprint to on master
   block:
@@ -29,12 +40,16 @@
       shell:
         cmd: |
           ssh-keyscan -p {{ ansible_port }} {{ ansible_host }}
-      delegate_to: "{{ master_host }}"
+      delegate_to: "{{ master_hosts[0] }}"
+      # We need to do this only once for current host as actually any master
+      # will get the same result for it. So we save it once and then add to
+      # all masters known hosts
+      when: master_hosts
       register: fingerprint
       changed_when: false
 
     - name: Ensure fingerprint in master known files
-      become_user: "{{ hostvars[master_host].ssh_trust.backup_user.name }}"
+      become_user: "{{ hostvars[master_host].ssh_trust.trust_user.name }}"
       become: yes
       blockinfile:
         path: "~/.ssh/known_hosts"
@@ -42,3 +57,6 @@
           # Managed by Ansible. Host {{ ansible_host }}
           {{ fingerprint.stdout }}
       delegate_to: "{{ master_host }}"
+      loop: "{{ master_hosts }}"
+      loop_control:
+        loop_var: master_host
