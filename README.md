@@ -56,8 +56,8 @@ ssh_trust_masters
 ssh_trust_slaves
 ```
 
-Beware that you have to have these group names as they are used as base to
-search public ssh key material.
+Beware that you don't have to have these group names as they are aren't used as
+base to search public ssh key material.
 
 #### License
 
