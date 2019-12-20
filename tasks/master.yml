@@ -1,5 +1,7 @@
 ---
 - name: Ensure trust user for master host
+  become: yes
+  become_user: root
   user:
     name: "{{ ssh_trust.trust_user.name }}"
     comment: "{{ ssh_trust.trust_user.comment | default('') }}"

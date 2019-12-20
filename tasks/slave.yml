@@ -1,5 +1,7 @@
 ---
 - name: Ensure trust user for slave host
+  become: yes
+  become_user: root
   user:
     name: "{{ ssh_trust.trust_user.name }}"
     comment: "{{ ssh_trust.trust_user.comment | default('') }}"
@@ -26,6 +28,8 @@
   when: master_hosts == []
 
 - name: Ensure master public key for trust user
+  become: yes
+  become_user: root
   authorized_key:
     user: "{{ ssh_trust.trust_user.name }}"
     state: present
@@ -48,14 +52,27 @@
       register: fingerprint
       changed_when: false
 
-    - name: Ensure fingerprint in master known files
+    - name: Get IP fingerprints from slave
+      shell:
+        cmd: |
+          bash -c 'for i in $(dig +short {{ ansible_host }}); do ssh-keyscan -p {{ ansible_port }} $i; done'
+      delegate_to: "{{ master_hosts[0] }}"
+      # We need to do this only once for current host as actually any master
+      # will get the same result for it. So we save it once and then add to
+      # all masters known hosts
+      when: master_hosts and ansible_host is not regex("\d+\.\d+\.\d+\.\d+")
+      register: ip_fingerprint
+      changed_when: false
+
+    - name: Ensure fingerprints in master known files
       become_user: "{{ hostvars[master_host].ssh_trust.trust_user.name }}"
       become: yes
       blockinfile:
         path: "~/.ssh/known_hosts"
         block: |
-          # Managed by Ansible. Host {{ ansible_host }}
           {{ fingerprint.stdout }}
+          {{ ip_fingerprint.stdout | default("") }}
+        marker: "# {mark} Managed by Ansible. Host {{ ansible_host }}. {mark}"
       delegate_to: "{{ master_host }}"
       loop: "{{ master_hosts }}"
       loop_control:
