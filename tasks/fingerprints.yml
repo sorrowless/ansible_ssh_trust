@@ -1,0 +1,38 @@
+---
+- name: Try to ensure public key fingerprint to on master
+  block:
+    - name: Get fingerprints from slave
+      shell:
+        cmd: |
+          ssh-keyscan -p {{ hostvars[item].ansible_port }} {{ hostvars[item].ansible_host }}
+      # We need to do this only once for current host as actually any master
+      # will get the same result for it. So we save it once and then add to
+      # all masters known hosts
+      with_items: "{{ ansible_play_hosts_all }}"
+      register: fingerprint
+      changed_when: false
+
+    - name: Get IP fingerprints from slave
+      shell:
+        cmd: |
+          bash -c 'for i in $(dig +short {{ hostvars[item].ansible_host }}); do ssh-keyscan -p {{ hostvars[item].ansible_port }} $i; done'
+      # We need to do this only once for current host as actually any master
+      # will get the same result for it. So we save it once and then add to
+      # all masters known hosts
+      when: hostvars[item].ansible_host is not regex("\d+\.\d+\.\d+\.\d+")
+      register: ip_fingerprint
+      with_items: "{{ ansible_play_hosts_all }}"
+      changed_when: false
+
+    - name: Ensure fingerprints in master known files
+      become_user: "{{ ssh_trust.trust_user.name }}"
+      become: yes
+      blockinfile:
+        path: "~/.ssh/known_hosts"
+        block: |
+          {{ item.stdout }}
+        marker: "# {mark} Managed by Ansible. Host {{ item.stdout | regex_search('\\[.*\\]') }}. {mark}"
+      when: item.stdout is defined
+      with_items:
+        - "{{ fingerprint.results }}"
+        - "{{ ip_fingerprint.results }}"

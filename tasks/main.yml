@@ -14,3 +14,8 @@
   when: not ssh_trust.master
   tags:
     - slave
+
+- include_tasks: fingerprints.yml
+  when: ssh_trust.master
+  tags:
+    - master
