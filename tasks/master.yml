@@ -3,44 +3,44 @@
   become: yes
   become_user: root
   user:
-    name: "{{ ssh_trust.trust_user.name }}"
-    comment: "{{ ssh_trust.trust_user.comment | default('') }}"
+    name: "{{ ssh_trust_config.trust_user.name }}"
+    comment: "{{ ssh_trust_config.trust_user.comment | default('') }}"
     createhome: yes
-    state: "{{ ssh_trust.trust_user.state | default('present') }}"
-    shell: "{{ ssh_trust.trust_user.shell | default('/bin/false') }}"
-  when: ssh_trust.trust_user.create
+    state: "{{ ssh_trust_config.trust_user.state | default('present') }}"
+    shell: "{{ ssh_trust_config.trust_user.shell | default('/bin/false') }}"
+  when: ssh_trust_config.trust_user.create
 
 - name: Ensure SSH RSA keys for trust user
-  command: "ssh-keygen -t rsa -b {{ ssh_trust.key.rsa.bits }} -f ~/.ssh/id_rsa -C {{ ssh_trust.key.comment }} -N ''"
+  command: "ssh-keygen -t rsa -b {{ ssh_trust_config.key.rsa.bits }} -f ~/.ssh/id_rsa -C {{ ssh_trust_config.key.comment }} -N ''"
   become: yes
-  become_user: "{{ ssh_trust.trust_user.name }}"
+  become_user: "{{ ssh_trust_config.trust_user.name }}"
   args:
     creates: "~/.ssh/id_rsa"
-  when: ssh_trust.key.type == "rsa"
+  when: ssh_trust_config.key.type == "rsa"
 
 - name: Ensure SSH Ed25519 keys for trust user
-  command: "ssh-keygen -o -t ed25519 -a {{ ssh_trust.key.ed25519.rounds }} -f ~/.ssh/id_ed25519 -C {{ ssh_trust.key.comment }} -N ''"
+  command: "ssh-keygen -o -t ed25519 -a {{ ssh_trust_config.key.ed25519.rounds }} -f ~/.ssh/id_ed25519 -C {{ ssh_trust_config.key.comment }} -N ''"
   become: yes
-  become_user: "{{ ssh_trust.trust_user.name }}"
+  become_user: "{{ ssh_trust_config.trust_user.name }}"
   args:
     creates: "~/.ssh/id_ed25519"
-  when: ssh_trust.key.type == "ed25519"
+  when: ssh_trust_config.key.type == "ed25519"
 
 - name: Ensure known_hosts file present on master
   become: yes
-  become_user: "{{ ssh_trust.trust_user.name }}"
+  become_user: "{{ ssh_trust_config.trust_user.name }}"
   file:
     path: "~/.ssh/known_hosts"
     state: touch
     mode: 0644
-    owner: "{{ ssh_trust.trust_user.name }}"
-    group: "{{ ssh_trust.trust_user.name }}"
+    owner: "{{ ssh_trust_config.trust_user.name }}"
+    group: "{{ ssh_trust_config.trust_user.name }}"
   changed_when: false
 
 - name: Get master public key for trust user
   slurp:
-    src: "~/.ssh/id_{{ ssh_trust.key.type }}.pub"
+    src: "~/.ssh/id_{{ ssh_trust_config.key.type }}.pub"
   register: ssh_master_public_key
-  become_user: "{{ ssh_trust.trust_user.name }}"
+  become_user: "{{ ssh_trust_config.trust_user.name }}"
   become: yes
   changed_when: false

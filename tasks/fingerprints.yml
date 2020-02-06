@@ -25,13 +25,13 @@
       changed_when: false
 
     - name: Ensure fingerprints in master known files
-      become_user: "{{ ssh_trust.trust_user.name }}"
+      become_user: "{{ ssh_trust_config.trust_user.name }}"
       become: yes
       blockinfile:
         path: "~/.ssh/known_hosts"
         block: |
           {{ item.stdout }}
-        marker: "# {mark} Managed by Ansible. Host {{ item.stdout | regex_search('\\[.*\\]') }}. {mark}"
+        marker: "# <{mark} host {{ item.item }}> Managed by Ansible."
       when: item.stdout is defined
       with_items:
         - "{{ fingerprint.results }}"

@@ -1,21 +1,42 @@
 ---
 - name: Override default data with user one
   set_fact:
-    ssh_trust: "{{ ssh_trust_defaults | combine(ssh_trust, recursive=True) }}"
+    updated_trust: "{{ updated_trust | default([]) + [ ssh_trust_defaults[0] | combine(item, recursive=True) ] }}"
+  with_items: "{{ ssh_trust }}"
+  tags:
+    - always
+
+- name: Show target ssh_trust variable
+  debug:
+    var: updated_trust
+    verbosity: 1
+
+- name: Explicitly set trust variable to operate over
+  set_fact:
+    ssh_trust: "{{ updated_trust }}"
   tags:
     - always
 
 - include_tasks: master.yml
-  when: ssh_trust.master
+  with_items: "{{ ssh_trust }}"
+  loop_control:
+    loop_var: ssh_trust_config
+  when: ssh_trust_config.master is defined and ssh_trust_config.master
   tags:
     - master
 
 - include_tasks: slave.yml
-  when: not ssh_trust.master
+  with_items: "{{ ssh_trust }}"
+  loop_control:
+    loop_var: ssh_trust_config
+  when: ssh_trust_config.master is defined and not ssh_trust_config.master
   tags:
     - slave
 
 - include_tasks: fingerprints.yml
-  when: ssh_trust.master
+  with_items: "{{ ssh_trust }}"
+  loop_control:
+    loop_var: ssh_trust_config
+  when: ssh_trust_config.master is defined and ssh_trust_config.master
   tags:
     - master

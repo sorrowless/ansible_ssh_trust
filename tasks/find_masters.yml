@@ -1,0 +1,7 @@
+---
+- name: Find proper master host
+  set_fact:
+    master_hosts: "{{ master_hosts | default([]) | union([host]) }}"
+  with_items: "{{ hostvars[host].ssh_trust }}"
+  when: item.master and item.group == ssh_trust_config.group
+
