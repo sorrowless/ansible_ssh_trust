@@ -1,6 +1,6 @@
 ---
 # defaults file for ssh-trust
-ssh_trust: {}
+ssh_trust: []
 ssh_trust_defaults:
   - master: false
     group: default
