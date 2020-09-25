@@ -1,5 +1,4 @@
-sbog/ssh-trust
-==============
+# sbog/ssh-trust
 
 Role to achieve SSH confidence between nodes. After some time of software
 deployment I stuck with interesting problem. There are cases when you need to
@@ -14,19 +13,19 @@ are many nodes then you'll have to do a bunch of manual work to generate keys,
 place them to proper places and add SSH fingerprints also. With this role you
 can achieve all of these automatically.
 
-#### Requirements
+## Requirements
 
 Ansible 2.4
 
-#### Role Variables
+## Role Variables
 
 You can see all vars in `default/main.yml` vars file.
 
-#### Dependencies
+## Dependencies
 
 None
 
-#### Example Playbook
+## Example Playbook
 
 ```yaml
 - name: Set the confidence between hosts
@@ -59,10 +58,10 @@ ssh_trust_slaves
 Beware that you don't have to have these group names as they are aren't used as
 base to search public ssh key material.
 
-#### License
+## License
 
 Apache 2.0
 
-#### Author Information
+## Author Information
 
-Stanislaw Bogatkin (https://sbog.ru)
+This role was created by [Stan Bogatkin](https://sbog.ru).

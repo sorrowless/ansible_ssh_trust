@@ -4,23 +4,6 @@ ssh_trust: []
 ssh_trust_defaults:
   - master: false
     group: default
-    key:
-      type: ed25519
-      comment: "ansible-ssh-trust@{{ ansible_host }}"
-      ed25519:
-        rounds: 100
-      rsa:
-        bits: 2048
-    # User with this name on masters will be able to ssh to users defined on
-    # slaves in the same group, but access from slaves to masters won't be
-    # allowed. So if you need to have a mesh access (all nodes should have access
-    # to all others), you just need to have the same set of masters and slaves.
-    # If you do not need to have a shell access (if you need only portforwarding,
-    # for example) you can set `shell` attribute to /bin/false and then user
-    # won't be able to login but will be able to portforward.
-    trust_user:
-      create: false
-      name: backuper
-      state: present
-      comment: "User to make backups from other nodes"
-      shell: /bin/false
+    # User with this name on masters will create fingerprints for slaves
+    # by reaching them.
+    trust_user: backuper

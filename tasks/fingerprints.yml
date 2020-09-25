@@ -31,14 +31,14 @@
   changed_when: false
 
 - name: Ensure fingerprints in master known files
-  become_user: "{{ ssh_trust_config.trust_user.name }}"
+  become_user: "{{ ssh_trust_config.trust_user }}"
   become: yes
   blockinfile:
     path: "~/.ssh/known_hosts"
     block: |
       {{ item.stdout }}
-    marker: "# <{mark} host {{ item.stderr_lines[0] | regex_search('#\\s(.*):', '\\1') | first }}> Managed by Ansible."
-  when: item.stdout is defined and item.stdout != "" and item.cmd != "echo"
+    marker: "# <{mark} host {{ item.stderr_lines[-1] | regex_search('#\\s(.*):', '\\1') | first }}> Managed by Ansible."
+  when: item.stdout is defined and item.stdout != "" and not item.cmd.startswith("echo")
   with_items:
     - "{{ fingerprint.results }}"
     - "{{ ip_fingerprint.results }}"

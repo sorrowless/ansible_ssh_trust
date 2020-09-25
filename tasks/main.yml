@@ -25,14 +25,6 @@
   tags:
     - master
 
-- include_tasks: slave.yml
-  with_items: "{{ ssh_trust }}"
-  loop_control:
-    loop_var: ssh_trust_config
-  when: ssh_trust_config.master is defined and not ssh_trust_config.master
-  tags:
-    - slave
-
 - include_tasks: fingerprints.yml
   with_items: "{{ ssh_trust }}"
   loop_control:
