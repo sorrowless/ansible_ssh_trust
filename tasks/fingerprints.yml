@@ -1,11 +1,9 @@
 ---
-#- name: Try to ensure public key fingerprint to on master
-#  block:
 - name: Get fingerprints from slave
   shell:
     cmd: |
       {% for config in hostvars[item].ssh_trust -%}
-        {% if config.group == ssh_trust_config.group and config.master == false -%}
+        {% if config.group == ssh_trust_config.group and not config.master|bool -%}
           ssh-keyscan -p {{ hostvars[item].ansible_port }} {{ hostvars[item].ansible_host }}
         {% else -%}
           echo
@@ -19,13 +17,18 @@
   shell:
     cmd: |
       {% for config in hostvars[item].ssh_trust -%}
-        {% if config.group == ssh_trust_config.group and config.master == false -%}
-          bash -c 'for i in $(dig +short {{ hostvars[item].ansible_host }}); do ssh-keyscan -p {{ hostvars[item].ansible_port }} $i; done'
+        {% if config.group == ssh_trust_config.group and not config.master|bool -%}
+          bash -c \
+          'for i in $(dig +short {{ hostvars[item].ansible_host }}); \
+            do ssh-keyscan -p {{ hostvars[item].ansible_port }} $i; \
+          done'
         {% else -%}
           echo
         {% endif %}
       {% endfor %}
-  when: hostvars[item].ansible_host is not regex("\d+\.\d+\.\d+\.\d+")
+  when:
+    - hostvars[item].ansible_host is defined
+    - hostvars[item].ansible_host is not regex("\d+\.\d+\.\d+\.\d+")
   register: ip_fingerprint
   with_items: "{{ ansible_play_hosts_all }}"
   changed_when: false
@@ -38,7 +41,10 @@
     block: |
       {{ item.stdout }}
     marker: "# <{mark} host {{ item.stderr_lines[-1] | regex_search('#\\s(.*):', '\\1') | first }}> Managed by Ansible."
-  when: item.stdout is defined and item.stdout != "" and not item.cmd.startswith("echo")
+  when:
+    - item.stdout is defined
+    - item.stdout
+    - not item.cmd.startswith("echo")
   with_items:
     - "{{ fingerprint.results }}"
     - "{{ ip_fingerprint.results }}"

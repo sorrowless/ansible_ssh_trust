@@ -1,4 +1,14 @@
 ---
+- name: Ensure .ssh directory present on master
+  become: yes
+  become_user: "{{ ssh_trust_config.trust_user }}"
+  file:
+    path: "~/.ssh"
+    state: directory
+    mode: 0750
+    owner: "{{ ssh_trust_config.trust_user }}"
+    group: "{{ ssh_trust_config.trust_user }}"
+
 - name: Ensure known_hosts file present on master
   become: yes
   become_user: "{{ ssh_trust_config.trust_user }}"

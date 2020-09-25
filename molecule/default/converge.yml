@@ -1,0 +1,21 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+
+  vars:
+    ssh_trust:
+      - master: true
+        group: molecule
+        # User with this name on masters will create fingerprints for slaves
+        # by reaching them.
+        trust_user: root
+
+  pre_tasks:
+    - name: Update apt cache.
+      apt: update_cache=true cache_valid_time=600
+      changed_when: false
+      when: ansible_os_family == 'Debian'
+
+  roles:
+    - role: ssh_trust
