@@ -6,18 +6,14 @@
 [![Ansible Role](https://img.shields.io/ansible/role/d/50937)](https://galaxy.ansible.com/sorrowless/ssh_trust)
 [![GitHub](https://img.shields.io/github/license/sorrowless/ansible_ssh_trust)](https://github.com/sorrowless/ansible_ssh_trust/blob/master/LICENSE)
 
-Role to achieve SSH confidence between nodes. After some time of software
-deployment I stuck with interesting problem. There are cases when you need to
-deploy software to several nodes where one node will behave like master and
-will go to other nodes and fetch some data from them by SSH protocol. For
-example if you deploy a backup solution based on Rsnapshot, it will go from
-backup node to all the nodes which are needed to be backuped and try to get
-some data from them. Or in case of AutoSSH usage some nodes will go to other
-nodes. In both of these cases to avoid password authentication you have to
-generate and use SSH keys. And there you will stuck into the problem - if there
-are many nodes then you'll have to do a bunch of manual work to generate keys,
-place them to proper places and add SSH fingerprints also. With this role you
-can achieve all of these automatically.
+Role to achieve SSH confidence between nodes. After setup new nodes one of
+which should reach other one, you get problem cause you have to go to the first
+node and manually try to reach second one. You have to do that cause SSH daemon
+will ask you to confirm target node fingerprint. In case you do not want to do
+that manually, this role can help. You can just specify primary and secondary
+nodes and run this role. For specified users on masters known_hosts will be
+created automatically. This helps especially if you have many primary nodes or
+have several groups of primary/secondary nodes.
 
 ## Requirements
 
