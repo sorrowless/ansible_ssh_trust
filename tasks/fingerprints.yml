@@ -1,50 +1,61 @@
 ---
-- name: Get fingerprints from slave
-  shell:
-    cmd: |
-      {% for config in hostvars[item].ssh_trust -%}
-        {% if config.group == ssh_trust_config.group and not config.master|bool -%}
-          ssh-keyscan -p {{ hostvars[item].ansible_port }} {{ hostvars[item].ansible_host }}
-        {% else -%}
-          echo
-        {% endif %}
-      {% endfor %}
+- name: Set fact to collect slave fingerprints and slaves list
+  set_fact:
+    slave_hosts: {}
+
+- name: Include tasks to get ssh trust configs for all slave nodes
+  include_tasks: _get_slave_hosts.yml
   with_items: "{{ ansible_play_hosts_all }}"
+  loop_control:
+    loop_var: play_host
+
+- name: "Show slave hosts list for {{ master_config.group }} group"
+  debug:
+    var: slave_hosts
+
+- name: "Get IP fingerprints from slaves in group {{ master_config.group }}"
+  shell:
+    cmd: ssh-keyscan -p {{ hostvars[item].ansible_port }} {{ hostvars[item].ansible_host }}
+  with_items: "{{ slave_hosts[master_config.group] }}"
   register: fingerprint
+  until: fingerprint.stderr.find("Connection closed by remote host") == -1
+  retries: 5
+  delay: 5
+  when:
+    - hostvars[item].ansible_host is defined
   changed_when: false
 
-- name: Get IP fingerprints from slave
+- name: "Get IP fingerprints from slaves in group {{ master_config.group }}"
   shell:
     cmd: |
-      {% for config in hostvars[item].ssh_trust -%}
-        {% if config.group == ssh_trust_config.group and not config.master|bool -%}
-          bash -c \
-          'for i in $(dig +short {{ hostvars[item].ansible_host }}); \
-            do ssh-keyscan -p {{ hostvars[item].ansible_port }} $i; \
-          done'
-        {% else -%}
-          echo
-        {% endif %}
-      {% endfor %}
+      bash -c \
+      'for i in $(dig +short {{ hostvars[item].ansible_host }}); \
+        do ssh-keyscan -p {{ hostvars[item].ansible_port }} $i; \
+      done'
+  register: ip_fingerprint
+  with_items: "{{ slave_hosts[master_config.group] }}"
+  until: ip_fingerprint.stderr.find("Connection closed by remote host") == -1
+  retries: 5
+  delay: 5
   when:
     - hostvars[item].ansible_host is defined
     - hostvars[item].ansible_host is not regex("\d+\.\d+\.\d+\.\d+")
-  register: ip_fingerprint
-  with_items: "{{ ansible_play_hosts_all }}"
   changed_when: false
 
-- name: Ensure fingerprints in master known files
-  become_user: "{{ ssh_trust_config.trust_user }}"
+- name: "Ensure fingerprints of slaves in master {{ ansible_host }} known files of {{ master_config.trust_user }} user"
+  become_user: "{{ master_config.trust_user }}"
   become: yes
   blockinfile:
     path: "~/.ssh/known_hosts"
     block: |
-      {{ item.stdout }}
+      {% for line in item.stdout_lines|sort %}
+      {{ line }}
+      {% endfor %}
     marker: "# <{mark} host {{ item.stderr_lines[-1] | regex_search('#\\s(.*):', '\\1') | first }}> Managed by Ansible."
   when:
     - item.stdout is defined
     - item.stdout
-    - not item.cmd.startswith("echo")
+    - item.stdout.find("Connection closed by remote host") == -1
   with_items:
     - "{{ fingerprint.results }}"
     - "{{ ip_fingerprint.results }}"

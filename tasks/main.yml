@@ -24,11 +24,12 @@
   when: ssh_trust_config.master is defined and ssh_trust_config.master
   tags:
     - master
+    - reset_known_files
 
 - include_tasks: fingerprints.yml
   with_items: "{{ ssh_trust }}"
   loop_control:
-    loop_var: ssh_trust_config
-  when: ssh_trust_config.master is defined and ssh_trust_config.master
+    loop_var: master_config
+  when: master_config.master is defined and master_config.master
   tags:
     - master

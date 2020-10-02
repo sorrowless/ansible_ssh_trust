@@ -9,6 +9,16 @@
     owner: "{{ ssh_trust_config.trust_user }}"
     group: "{{ ssh_trust_config.trust_user }}"
 
+- name: Reset known_hosts file present on master
+  become: yes
+  become_user: "{{ ssh_trust_config.trust_user }}"
+  file:
+    path: "~/.ssh/known_hosts"
+    state: absent
+  tags:
+    - never
+    - reset_known_files
+
 - name: Ensure known_hosts file present on master
   become: yes
   become_user: "{{ ssh_trust_config.trust_user }}"

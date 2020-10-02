@@ -1,0 +1,16 @@
+---   
+- name: Set fact with master group slave hosts
+  set_fact:
+    slaves: "{{ slave_hosts[master_config.group]|default([]) }}"
+
+- name: "Check ssh trust config from host {{ play_host }}"
+  set_fact:
+    slaves: "{{ slaves + [play_host] }}"
+  with_items: "{{ hostvars[play_host].ssh_trust }}"
+  when:
+    - item.group == master_config.group
+    - not item.master|bool
+
+- name: Update slave hosts var
+  set_fact:
+    slave_hosts: "{{ slave_hosts | combine({ master_config.group: slaves }) }}"
