@@ -1,7 +1,7 @@
 # sbog/ssh-trust
 
-[![Ansible Role](https://img.shields.io/ansible/role/50937)](https://galaxy.ansible.com/sorrowless/ssh_trust)
 [![Build Status](https://travis-ci.com/sorrowless/ansible_ssh_trust.svg?branch=master)](https://travis-ci.com/sorrowless/ansible_ssh_trust)
+[![Ansible Role](https://img.shields.io/ansible/role/50937)](https://galaxy.ansible.com/sorrowless/ssh_trust)
 [![Ansible Quality Score](https://img.shields.io/ansible/quality/50937)](https://galaxy.ansible.com/sorrowless/ssh_trust)
 [![Ansible Role](https://img.shields.io/ansible/role/d/50937)](https://galaxy.ansible.com/sorrowless/ssh_trust)
 [![GitHub](https://img.shields.io/github/license/sorrowless/ansible_ssh_trust)](https://github.com/sorrowless/ansible_ssh_trust/blob/master/LICENSE)
