@@ -1,4 +1,4 @@
----   
+---
 - name: Set fact with master group slave hosts
   set_fact:
     slaves: "{{ slave_hosts[master_config.group]|default([]) }}"

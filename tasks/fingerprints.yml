@@ -14,8 +14,7 @@
     var: slave_hosts
 
 - name: "Get IP fingerprints from slaves in group {{ master_config.group }}"
-  shell:
-    cmd: ssh-keyscan -p {{ hostvars[item].ansible_port }} {{ hostvars[item].ansible_host }}
+  command: ssh-keyscan -p {{ hostvars[item].ansible_port }} {{ hostvars[item].ansible_host }}
   with_items: "{{ slave_hosts[master_config.group] }}"
   register: fingerprint
   until: fingerprint.stderr.find("Connection closed by remote host") == -1
